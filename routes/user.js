@@ -29,5 +29,13 @@
       return res.json(data);
     });
   };
+
+  module.exports.addScore = function(req, res){
+    var params = req.body;
+    var player = new db.users(params);
+    player.save(function(err){
+      if(err) throw err;
+    });
+  };
  
 }).call(this);
