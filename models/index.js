@@ -27,6 +27,4 @@
  
   module.exports.users = mongoose.model('users', require('./users'));
  
-  module.exports.posts = mongoose.model('highscores', require('./highscores'));
- 
 }).call(this);
