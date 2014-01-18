@@ -36,7 +36,7 @@
 			var global = this.global;
 			var pointData = global.pointData;
 			for (var i=0;i<pointData.length;i++)
-				if(pointData[i].ID==global.SELECTING_RECORD)
+				if(pointData[i].id==musicList[global.SELECTING_RECORD].ID)
 					score = pointData[i].lv[global.DIFFICULTY]+"";
 			ctx.fillText(score,this.width/2 - ctx.measureText(score).width/2,100);
 			
@@ -150,7 +150,7 @@
 			var EName=UnSign(musicName);
 			var arr_name=EName.split(" ");
 			var completeName="";
-			for (x in arr_name)
+			for (var x=0;x<arr_name.length;x++)
 				completeName+=arr_name[x];
 			location.hash="/"+1+"-"+musicList[global.SELECTING_RECORD].ID+"-"+global.DIFFICULTY+"/"+completeName;
 		}
@@ -706,7 +706,7 @@
 					global.playingAudio.pause();
 					global.playingAudio.currentTime = 0;
 				}
-				pausedStart = 0;
+				global.pausedStart = 0;
 			}
 		},
 		function(){},
@@ -803,10 +803,17 @@
 			for (var i=0;i<length;i++){
 				var currentKey = keyData[recordData[i].keyIndex];
 				var key="";
-				if (currentKey.type == "white")
-					key=String.fromCharCode(currentKey.keyCode).toLowerCase();
-				else
-					key=String.fromCharCode(currentKey.keyCode);
+
+				
+				if ( currentKey.keyCode >= 96 && currentKey.keyCode <= 105){
+					key='<span style="color:red">'+String.fromCharCode(currentKey.keyCode-48)+'</span>';
+				} else
+				{
+					if (!currentKey.isShift)
+						key=String.fromCharCode(currentKey.keyCode).toLowerCase();
+					else
+						key=String.fromCharCode(currentKey.keyCode);
+				}
 				var time=recordData[i].time;
 				if (i!=len1)
 					if (time==recordData[i+1].time){
@@ -971,7 +978,7 @@
 					ctx.stroke();
 					ctx.fillStyle = (key.type == "black")?"#FFF":"#000";
 					var keyString = String.fromCharCode(keyData[key.keyIndex].keyCode);
-					if(key.type == "white") keyString = keyString.toLowerCase();
+					if(!key.isShift) keyString = keyString.toLowerCase();
 					ctx.font = "20px Times New Roman";
 					if(this.director.globalVariables.SHOW_KEYBOARD_TEXT) ctx.fillText(keyString,x + width/2 - ctx.measureText(keyString).width/2,y+height-3);
 				}

@@ -6,6 +6,12 @@
 	schema = mongoose.Schema({
 		fid : String,
 		name : String,
+		settings : {
+			general: Object,
+			keyboard:Object,
+			record:Object,
+			social:Object
+		},
 		highscore: [{mid : Number, score : Number, level : Number}],
 	});
 

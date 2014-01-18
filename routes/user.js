@@ -18,8 +18,10 @@
   module.exports.login = function(req, res){
     var data = req.body;
     var access_token = data.access_token;
-    graph.setAccessToken(access_token);
 
+    req.session.access_token = access_token;
+    graph.setAccessToken(access_token);
+    console.log(data);
     graph.get(data.uid, function(err, result){
       
       req.session.user = result;
@@ -37,6 +39,7 @@
         console.log(rows);
         if(err) throw err;
         if(rows[0]){
+          console.log(rows);
           return res.json(rows[0]);
         }else{
           user.save(function(err, rows){
@@ -49,10 +52,13 @@
 
   module.exports.setting = function(req, res){
     var data = req.body.setting;
-    var session_user = req.session.user;
+    data = JSON.parse(data);
+    console.log(data);
 
-    var user = new db.users();
-    user.update({fid : session_user.id}, {$set : {setting : data}})
+    var session_user = req.session.user;
+    console.log(session_user);
+
+    db.users.update({fid : session_user.id}, {$set : {"settings" : data}})
     .exec(function(err, rows){
       if(err) throw err;
       console.log(rows);
@@ -62,14 +68,21 @@
 
   module.exports.addScore = function(req, res){
     
-    var params = req.body;
+    var data = req.body;
     var session_user = req.session.user;
 
+    console.log(data);
     // var params = {
-    //   mid : 6,
-    //   level : 1,
-    //   score : 10000
+    //   mid : data.a,
+    //   level : data.b,
+    //   score : data.c
     // };
+
+    var params = {
+      mid : 3,
+      level : 1,
+      score : 17000
+    };
 
     var user = new db.users();
 
@@ -95,54 +108,51 @@
       }
     });
 
-    // var cb = function(beat){
-    //   return res.json(beat);
-    // };
+    var cb = function(beat){
+       res.json(beat);
+    };
 
-    // compareFriends(session_user.id, data, cb);
+    compareFriends(session_user.id, params, cb);
 
-    return res.json(1);
+    //res.json(1);
   };
 
   function compareFriends(fid, highscore, cb){
       var beat = [];//danh sach ban be diem thap hon
       //so sanh voi ban be
-      async.series([
-        function(callback){
-          graph.get(fid+"?fields=friends", function(err, result) {
-            var friends = result.friends.data;
+      graph.get(fid+"?fields=friends", function(err, result) {
+        var friends = result.friends.data;
 
-            var arr_id = [];
-            for(var i = 0; i<friends.length; i ++){
-              arr_id.push(friends[i].id);
-            }
-
-              db.users.find(
-              {
-                fid : {$in : arr_id},
-                highscore : {$elemMatch : {mid : highscore.mid, level : highscore.level, score : {$lt : highscore.score}}},
-              }).exec(function(err, rows){
-                //tim thay thanh cong
-                console.log(rows);
-                if(rows[0]){
-                  for(var j = 0; j < rows.length; j++){
-                    beat.push(rows[j].fid);
-                  }
-                  callback();
-                }
-              });
-          });
-        },
-        function(callback){
-          console.log(beat);
-
-          graph.post(fid+'/pianoic:beat?fb:explicitly_shared=true&client_secret='+conf.app_secret+'&profile='+profile+'&tags='+arr_tags,function(err, result){
-            console.log(result);
-          });
-          
-          cb(beat);
+        var arr_id = [];
+        for(var i = 0; i<friends.length; i ++){
+          arr_id.push(friends[i].id);
         }
-      ]);
+
+        db.users.find({
+          fid : {$in : arr_id},
+          highscore : {$elemMatch : {mid : highscore.mid, level : highscore.level, score : {$lt : highscore.score}}},
+        }).exec(function(err, rows){
+          //tim thay thanh cong
+          console.log(rows);
+          if(rows){
+              graph.get('oauth/access_token?client_id='+conf.client_id+'&client_secret='+conf.client_secret+'&grant_type=client_credentials', function(err, app_token){
+              if(err) throw err;
+              console.log(app_token);
+              for(var j = 0; j < rows.length; j++){
+                beat.push(rows[j].fid);
+                beatOnFacebook(fid,app_token.access_token,rows[j].fid);
+              }
+              cb(beat);
+            });
+          }
+        });
+      });
+  }
+
+  function beatOnFacebook(fid, app_token,profile){
+    graph.post(fid+'/pianoic:beat?access_token='+app_token+'&method=POST&profile='+profile,function(err, result){
+          console.log(result);
+    });
   }
  
 }).call(this);

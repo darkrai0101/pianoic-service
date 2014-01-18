@@ -20,7 +20,12 @@
 		PlayListContainer
 		HighScoreContainer
 */
-
+loadingIconLoaded = false;
+var loadingIcon = new Image();
+loadingIcon.src = "Pack/loading-icon.png";
+loadingIcon.onload = function(){
+	loadingIconLoaded = true;
+}
 window.onload = function () {
     var loadedImage = 0;
 	var loadedAudio = 0;
@@ -48,58 +53,70 @@ window.onload = function () {
     	};
     	if (server) {
 			var score=[];
-			for (var i=0;i<server.highscore.length;i++){
+			if(server.highscore.length>0) {
+				var songscore={id:server.highscore[0].mid,lv:[0,0,0]};
+					songscore.lv[server.highscore[0].level]=server.highscore[0].score;
+					score.push(songscore);
+			}console.log(songscore)
+			for (var i=1;i<server.highscore.length;i++){
 				for (var j=0;j<score.length;j++){
-					var songscore={id:server.highscore[i].id,lv:[0,0,0]};
-					songscore.lv[server.highscore[i].lv]=server.highscore[i].score;								
-					if(score[j].id==server.highscore[i].id)	{
-						songscore={id:server.highscore[i].id,lv:score[j].lv};
-						songscore.lv[server.highscore[i].lv]=server.highscore[i].score;
+					var songscore={id:server.highscore[i].mid,lv:[0,0,0]};
+					songscore.lv[server.highscore[i].level]=server.highscore[i].score;	
+					console.log(songscore)							
+					if(score[j])
+					if(score[j].id==server.highscore[i].mid)	{
+						songscore={id:server.highscore[i].mid,lv:score[j].lv};
+						songscore.lv[server.highscore[i].level]=server.highscore[i].score;
 						break;									
 					}
 				}
 				score.push(songscore);
 			}
+			if(server.settings)
 			dtplayer={
-	    		id:server.id,
+	    		id:server.fid,
+	    		name:server.name,
+	    		setting: server.settings,
+	    		score:score
+	    	};
+	    	else
+	    		dtplayer={
+	    		id:server.fid,
 	    		name:server.name,
 	    		setting:{
-	    			general:server.setting.general,
-	    			keyboard:server.setting.keyboard,
-	    			record:server.setting.record,
-	    			social:server.setting.social
+	    			general:{},
+	    			keyboard:{},
+	    			record:{},
+	    			social:{}
 	    		},
 	    		score:score
 	    	};
+
 	    	
 		}
-		if (localStorage.pianoHighscore){
-			dtplayer.score=JSON.parse(localStorage.pianoHighscore);
-			localStorage.clear();
-		}
-		if (localStorage.pianoic)
-			if(!JSON.parse(localStorage.pianoic).length){
-				dtplayer=JSON.parse(localStorage.pianoic);					
-				localStorage.clear();
-			}
+		// if (localStorage.pianoHighscore){
+		// 	dtplayer.score=JSON.parse(localStorage.pianoHighscore);
+		// 	localStorage.clear();
+		// }
+		// if (localStorage.pianoic)
+		// 	if(!JSON.parse(LZString.decompressFromUTF16(localStorage.pianoic)).length){
+		// 		dtplayer=JSON.parse(LZString.decompressFromUTF16(localStorage.pianoic));					
+		// 		localStorage.clear();
+		// 	}
     	if(typeof(Storage)!=="undefined"){
     		if (localStorage.pianoic) {
 				try {
 					
 					if (server){
-						var storage=JSON.parse(localStorage.pianoic);
-				    	var founded;
-				    	for (var i=0;i<storage.length;i++){
-				    		if(storage[i].id==dtplayer.id){
-				    			storage[i]=dtplayer;
-				    			founded=true;
-				    			break;
-				    		}
-				    	}
-				    	if (!founded) storage.push(dtplayer);
-				    	localStorage.pianoic=JSON.stringify(storage);
+						localStorage.clear();
+				    	localStorage.pianoic=LZString.compressToUTF16(JSON.stringify(dtplayer));
 			    	}			    	
-						player=JSON.parse(localStorage.pianoic)[0];
+			    	try{
+						player=JSON.parse(LZString.decompressFromUTF16(localStorage.pianoic));
+					} catch (e){
+							player=dtplayer;
+							localStorage.clear();
+						}
 						
 				
 			    } catch (e) {
@@ -115,10 +132,10 @@ window.onload = function () {
 		} else {
 			  // Sorry! No web storage support..
 			  }
-
 		return player;
+
     }
-    /*var setDefault = function(global){
+    var setDefault = function(global){
     	//Setting panel
 		global.LANGUAGE = 0; //0: English, 1: Vietnamese
 		global.AUTOPLAY = true;		// tu danh not play 1 ban nhac
@@ -128,22 +145,29 @@ window.onload = function () {
 		global.SHOW_KEYBOARD_TEXT = true;
 		global.SHOW_PLAYBACK_TEXT = true;
 		
-    }*/
-    var initGlobal = function(global,server){
+    }
+     var initGlobal = function(global,server){
     	//Load storage
-		if(!server) global.player=loadStorage();
-		else 		global.player=loadStorage(server);
-		//Setting panel
-		global.LANGUAGE = global.player.setting.general.LANGUAGE||0; //0: English, 1: Vietnamese
-		global.AUTOPLAY = global.player.setting.general.AUTOPLAY||true;		// tu danh not play 1 ban nhac
-		global.ENABLE_PLAY_FILE = global.player.setting.general.ENABLE_PLAY_FILE||true;	// tim va phat File thay cho Note On neu co;
-		global.PLAY_FULL_FILE = global.player.setting.general.PLAY_FULL_FILE||true; 	// down file Full thay vi file Simple
-		global.AUTO_PAUSE = global.player.setting.general.AUTO_PAUSE||false; 	
-		global.SHOW_KEYBOARD_TEXT = global.player.setting.general.SHOW_KEYBOARD_TEXT||true;
-		global.SHOW_PLAYBACK_TEXT = global.player.setting.general.SHOW_PLAYBACK_TEXT||true;
+		if(!server) {global.player=loadStorage();global.access=false;}
+		else 		{global.player=loadStorage(server);global.access=true;}
+		if (!server) setDefault(global); else 
+			if (!server.settings) setDefault(global);
+			else {
+		//Setting general panel
+		global.LANGUAGE = global.player.setting.general.LANGUAGE; //0: English, 1: Vietnamese
+		global.AUTOPLAY = global.player.setting.general.AUTOPLAY;		// tu danh not play 1 ban nhac
+		global.ENABLE_PLAY_FILE = global.player.setting.general.ENABLE_PLAY_FILE;	// tim va phat File thay cho Note On neu co;
+		global.PLAY_FULL_FILE = global.player.setting.general.PLAY_FULL_FILE; 	// down file Full thay vi file Simple
+		global.AUTO_PAUSE = global.player.setting.general.AUTO_PAUSE; 	
+		global.SHOW_KEYBOARD_TEXT = global.player.setting.general.SHOW_KEYBOARD_TEXT;
+		global.SHOW_PLAYBACK_TEXT = global.player.setting.general.SHOW_PLAYBACK_TEXT;
+		}
 		//Load score xuong
 		global.pointData = global.player.score||[];
+
+		console.log(global.player)
     }
+
 
     windowLoad();
 	function windowLoad(){	
@@ -152,15 +176,23 @@ window.onload = function () {
 		//director.renderMode=2
 		var global = director.globalVariables = {};
 
-		initGlobal(global);//Load storage, setting panel, score
+		initGlobal(global);//Load storage, setting general panel, score
+
+		//set key
+		global.onsetkey=true;
 		//Volume bar
 		global.SFX_VOLUME = 100;
 		global.MUSIC_VOLUME = 100;
 		global.PLAYBACK_SPEED = 1;
 
 	
-
-		global.SELECTING_RECORD = 3;
+		var firstLoad;
+		if(location.hash){
+			var link = location.hash.substr(2, location.hash.length);
+			firstLoad = link.split("-")[1];
+			console.log(firstLoad);
+		}
+		global.SELECTING_RECORD = firstLoad||3;
 		global.DIFFICULTY_EASY = 0;
 		global.DIFFICULTY_HARD = 1;
 		global.DIFFICULTY_INSANE = 2;
@@ -191,88 +223,157 @@ window.onload = function () {
 		var startTime = +new Date();
         var loadActor = new CAAT.Foundation.ActorContainer().setBounds(0,0,director.width,director.height);
 		scene.addChild(loadActor);
-		var roundedRect=function(ctx,x,y,width,height,radius,fill,stroke)
-{
-			ctx.save();	// save the context so we don't mess up others
-			ctx.beginPath();
+		var loginButtonWidth = 450;
+		var loginButtonHeight = 70;
+		loadActor.loadingComplete = function(){
+			var self = this;
+			FB.getLoginStatus(function(response) {     
+            	if (response.status === 'connected') {
+            		run(director,loadImages,loadAudios);
+        			scene.removeChild(self);
+    				var fd = new FormData();
+                	var uid=response.authResponse.userID;
+                	var access_token=response.authResponse.accessToken;
+                    fd.append("uid", uid);
+                    fd.append("access_token", access_token);
+                    try {
+			            $.ajax({
+			                url: "/user",
+			                type: "POST",
+			                data: fd,
+			                processData: false,
+			                contentType: false,
+			                cache: false,
+			                success: function (data) {
+			                    initGlobal(global,data);
+                    			
+			                },
+			                error: function (shr, status, data) {
+			                    console.log("error " + data + " Status " + shr.status);
+			                },
+			                complete: function () {
+			                    console.log("li");
+			                }
+			            });
 
-			// draw top and top right corner
-			ctx.moveTo(x+radius,y);
-			ctx.arcTo(x+width,y,x+width,y+radius,radius);
-
-			// draw right side and bottom right corner
-			ctx.arcTo(x+width,y+height,x+width-radius,y+height,radius); 
-
-			// draw bottom and bottom left corner
-			ctx.arcTo(x,y+height,x,y+height-radius,radius);
-
-			// draw left and top left corner
-			ctx.arcTo(x,y,x+radius,y,radius);
-
-			if(fill){
-			ctx.fill();
+			        } catch (e) {
+			            console.log(e);
+			        }
+            	}
+        	});
+			var fbLoginButton = new CAAT.ActorContainer().setBounds(this.width/2-loginButtonWidth/2,this.height*2/3-loginButtonHeight/2,loginButtonWidth,loginButtonHeight);
+			var noLoginButton = new CAAT.ActorContainer().setBounds(this.width/2-loginButtonWidth/2,this.height*2/3+loginButtonHeight,loginButtonWidth,loginButtonHeight);
+			iconWidth = 60;
+			iconHeight = 60;
+			fbLoginButton.paint = function(director,time){
+				var ctx = director.ctx;
+				ctx.fillStyle = "#29497f";
+				ctx.fillRect(0,0,this.width,this.height);
+				ctx.drawImage(director.getImage("fbLoginIcon"),10,this.height/2-iconHeight/2,iconWidth,iconHeight);
+				var text = "LOGIN VIA FACEBOOK";
+				ctx.fillStyle = "#FFF";
+				ctx.font = "27px Times New Roman";
+				ctx.fillText(text,80,45);
+				
 			}
-			if(stroke){
-			ctx.stroke();
+			noLoginButton.paint = function(director,time){
+				var ctx = director.ctx;
+				ctx.fillStyle = "#0e0e0e";
+				ctx.fillRect(0,0,this.width,this.height);
+				ctx.drawImage(director.getImage("noLoginIcon"),10,this.height/2-iconHeight/2,iconWidth,iconHeight);
+				var text = "DON'T LOGIN, JUST PLAY!";
+				ctx.fillStyle = "#FFF";
+				ctx.font = "27px Times New Roman";
+				ctx.fillText(text,80,45);
 			}
-			ctx.restore();	// restore context to what it was on entry
+			fbLoginButton.mouseDown = function(){
+				FB.login(function (response) {
+                        if (response.authResponse) {
+                        	var fd = new FormData();
+                        	var uid=response.authResponse.userID;
+                        	var access_token=response.authResponse.accessToken;
+                            fd.append("uid", uid);
+                            fd.append("access_token", access_token);
+                            try {
+					            $.ajax({
+					                url: "/user",
+					                type: "POST",
+					                data: fd,
+					                processData: false,
+					                contentType: false,
+					                cache: false,
+					                success: function (data) {
+					                    initGlobal(global,data);
+                            		run(director,loadImages,loadAudios);
+                            		scene.removeChild(self);
+					                },
+					                error: function (shr, status, data) {
+					                    console.log("error " + data + " Status " + shr.status);
+					                },
+					                complete: function () {
+					                    console.log("li");
+					                }
+					            });
+
+					        } catch (e) {
+					            console.log(e);
+					        }
+                            
+                        } else {
+                        	var message="You must install the application to share your greeting \n Bạn phải cho phép ứng dụng mới có thể chia sẻ thông tin của bạn với bạn bè"
+                            alert(message);
+                            run(director,loadImages,loadAudios);
+                            scene.removeChild(self);
+                        }
+	                    }, {
+	                        scope: 'publish_actions,publish_stream'
+	                    });	
+				
+			}
+			noLoginButton.mouseDown = function(){
+				run(director,loadImages,loadAudios);
+				scene.removeChild(self);
+			}
+			this.fbLoginButton = fbLoginButton;
+			this.noLoginButton = noLoginButton;
+			this.addChild(fbLoginButton);
+			this.addChild(noLoginButton);
+			
+			
 		}
-		var radius=Math.PI/12
-		var StrLoadd=""
 		loadActor.paint = function(director,time){
 			var ctx = director.ctx;
-			
-			ctx.beginPath();
-			if(loadedPercent<0) loadedPercent = 0;
-			if(loadedPercent<1) return;
-			if(loadedPercent<2) return;
-			var rectWidth = 100;
-			var rectHeight = 100;
-			var rectX = this.width/2 - rectWidth/2;
-			var rectY = this.height/2 - rectHeight/2;
-			var cornerRadius = 20;
-			ctx.globalAlpha=0.5
-			ctx.fillStyle = "black";
-			roundedRect(ctx,10,10,this.width-20,this.height-20,cornerRadius,true,false);
-			ctx.fillStyle = "9fffa7";
-			roundedRect(ctx,0,0,this.width,this.height,cornerRadius,true,false);
-			ctx.fillStyle = "black";
-			ctx.globalAlpha=0.3
-			roundedRect(ctx,rectX,rectY,rectWidth,rectHeight,cornerRadius,false,true);
-			ctx.fillStyle = "black";
-			ctx.shadowColor = 'black';
-			ctx.shadowBlur = 20;
-			ctx.shadowOffsetX = 10;
-			ctx.shadowOffsetY = 10;
-			ctx.fill();
-			ctx.closePath();
-			ctx.beginPath();
-			ctx.globalAlpha=1
-			ctx.fillStyle = "white";
-			ctx.font = "20px Times New Roman";
-			ctx.fillText(loadedPercent+"%",CANVAS_WIDTH/2-ctx.measureText(loadedPercent+"%").width/2,this.height/2+5);
-			ctx.fillText("LOADING"+StrLoadd,CANVAS_WIDTH/2-ctx.measureText("LOADING...").width/2,this.height/2-60);
-			var indexloadTime=(+new Date()-startTime)%2000
-			if(indexloadTime<500) StrLoadd=""	
-			if(indexloadTime>=500) StrLoadd="."	
-			if(indexloadTime>=1000) StrLoadd=".."	
-			if(indexloadTime>=1500) StrLoadd="..."	
-			if(indexloadTime>=1900) StrLoadd="...."				
-			ctx.lineWidth = 2;
-			ctx.stroke();
-			radius+=4*Math.PI/180
-			ctx.closePath();
-			ctx.beginPath();
-			ctx.arc(rectX+rectWidth/2 , rectY+rectHeight/2, 30, radius, radius+2 * Math.PI-30*Math.PI/180, false);
-			ctx.lineWidth = 5;
-			ctx.strokeStyle = '#003300';
-			ctx.stroke();
-			ctx.closePath();
-		
-			var firstRes=false;
+			ctx.fillStyle = "#8d1f1f";
+			ctx.fillRect(0,0,this.width,this.height);
+			var startY = this.height/8;
+			var imageSize = this.height/5;
+			if(loadingIconLoaded&&!this.loadComplete){
+				ctx.drawImage(loadingIcon,this.width/2 - imageSize/2,startY,imageSize,imageSize);
+			}
+			ctx.font = "100 120px Arial";
+			ctx.fillStyle = "#FFF";
+			var text = "PIANOIC";
+			ctx.fillText(text,this.width/2-ctx.measureText(text).width/2,this.height/2);
+			if(!this.loadComplete){
+				var loadText = "Loading";
+				ctx.font = "italic 30px Verdana"
+				var loadTextX = this.width/2 - ctx.measureText(loadText).width/2;
+				var dotNumber = (((time/500)<<0)%4);
+				for(var i=0;i<dotNumber;i++) loadText+=".";
+				ctx.fillText(loadText,loadTextX,this.height*3/4);
+			}
+			else{
+				if(!this.justComplete){
+					this.justComplete = true;
+					this.loadingComplete();
+				}
+			}
 			if(processed&&loadImages&&loadAudios&&(+new Date() - startTime>1000)) {
-				run(director,loadImages,loadAudios);
-				scene.removeChild(this);					
+				this.loadComplete = true;
+				ctx.drawImage(director.getImage("bkgmLogo"),this.width/2 - imageSize/2,startY,imageSize,imageSize);
+				
+			
+									
 			}
 		}
 		load(director);
@@ -289,7 +390,7 @@ window.onload = function () {
 		MIDI.loadPlugin({
 		soundfontUrl: soundUrl,
 		instrument: "acoustic_grand_piano",
-		callback: function() {
+		callback: function() {console.log("fin")
 			loadAudio=loadMaxAudio;
 		}
 		});
@@ -368,13 +469,16 @@ window.onload = function () {
 			addElement("facebookIcon","img/statistic/facebook.png").
 			addElement("likeIcon","img/statistic/like.png").
 			addElement("fireEff","img/fire.png").
-			addElement("backgroundChristmas","img/backgroundChristmas.jpg")
-		
+			addElement("backgroundChristmas","img/backgroundChristmas.jpg").
+			addElement("bkgmLogo","Pack/BKGM-logo-big.png").
+			addElement("fbLoginIcon","Pack/big-facebookshare-icon.png").
+			addElement("noLoginIcon","Pack/anonymous-icon.png")
 		var elementLength =imageElement.elements.length+loadMaxAudio+maxSoundIndex;
 
         imageElement.load(
 		function onAllAssetsLoaded(images) {
 			loadImages = images;
+			director.setImagesCache(images);
 		},
 		function onEachLoad(index){
 			loadedImage++;
@@ -382,11 +486,7 @@ window.onload = function () {
 		});
     }
     function run(director,images) {
-    	var fn=function(data){
-    		console.log(data);
-    	}
-    	DKM(fn);
-        director.setImagesCache(images);
+        //director.setImagesCache(images);
 		var global = director.globalVariables;
 		var scene = director.currentScene;
 		
@@ -523,12 +623,12 @@ window.onload = function () {
 					var giftboxSize =30;
 					var key="";
 					var bgcolor;
-					if ( currentKey.keyCode >= 96 && currentKey.keyCode <= 105){
-						key=String.fromCharCode(currentKey.keyCode-48);
+					if ( currentKey.keyCode[0] >= 96 && currentKey.keyCode[0] <= 105){
+						key=String.fromCharCode(currentKey.keyCode[0]-48);
 						bgcolor="red";
 					} else
-						key=String.fromCharCode(currentKey.keyCode);
-					if(!currentKey.isShift){
+						key=String.fromCharCode(currentKey.keyCode[0]);
+					if(currentKey.type="white"){
 						hitKeyActor = whiteKey[currentKey.index];
 						ctx.fillStyle = bgcolor||"#FFF";
 						ctx.strokeStyle = "#000";
@@ -603,6 +703,7 @@ window.onload = function () {
 			}
 			if(!keyActor) return;
 			//playKey(keyActor.keyIndex);
+			changeKey(keyActor.keyIndex);
 			keyPress(keyActor.keyIndex);
 			if(global.RECORDING) {
 				scene.recordData.push({keyIndex: keyActor.keyIndex, time: scene.time-recordStartTime});
@@ -646,7 +747,7 @@ window.onload = function () {
 			}
 			if(global.PLAYING_RECORD){
 				var remainTime = (global.PLAY_FILE)?(scene.recordData[scene.recordData.length-1].time - ((global.playingAudio.currentTime*1000)<<0)):
-											(scene.recordData[scene.recordData.length-1].time + recordStartTime - (global.PAUSING_RECORD?pausedStart:scene.time));
+											(scene.recordData[scene.recordData.length-1].time + recordStartTime - (global.PAUSING_RECORD?global.pausedStart:scene.time));
 				var playedTime = scene.recordData[scene.recordData.length-1].time - remainTime;
 				this.playedTime=playedTime;
 				
@@ -925,48 +1026,40 @@ window.onload = function () {
 			} */
 			var arr=[];
 			for(var i=0;i<musicList.length;i++){
-					var initScore = {ID:musicList[i].ID,lv:[0,0,0]};
+					var initScore = {id:musicList[i].ID,lv:[0,0,0]};
 					arr.push(initScore);
 				}
-
+				//post score to server
+			var mn=function(x,y,z){
+				if (global.access){
+					var m='=';
+					var n='cG9zdA';
+					var fd = {"a": x,"b": y,"c": z};
+			        pi[atob(n+m+m)](atob('L3VzZXIvc2NvcmU'+m),fd);
+			    }
+			}
+			
+			
+				//function (x,y){this[x]=y;if(l)l();}
+			//vl(atob("QXJyYXkucHJvdG90eXBlLnNldD1mdW5jdGlvbih4LHkseil7dGhpc1t5XT16O30="));
+			window[atob("QXJyYXk=")].prototype.set=function(x,y,z){
+				this[y]=z;
+				mn.apply(null,arguments);
+			}
 				//global.pointData.push([0,0,0]);
 			for(var i=0;i<arr.length;i++){
 				for (var j=0;j<global.pointData.length;j++)
-					if (arr[i].ID==global.pointData[j].ID)
+					if (arr[i].id==global.pointData[j].id)
 					{
-						var initScore = {ID:arr[i].ID,lv:global.pointData[j].lv};
+						var initScore = {id:arr[i].id,lv:global.pointData[j].lv};
 						arr[i]=initScore;
 					}
 			}
+			
 			global.pointData=arr;
 		function insertHighScore(score, record, difficulty){			
-			global.pointData[record].lv[difficulty]=score;
-			var fd = new FormData();
-	        fd.append("mid", global.pointData[record].id);
-	        fd.append("lv", difficulty);
-	        fd.append("score", score);
-	        try {
-	            $.ajax({
-	                url: "/user/score",
-	                type: "POST",
-	                data: fd,
-	                processData: false,
-	                contentType: false,
-	                cache: false,
-	                success: function (data) {
-	                    console.log("success " + data);
-	                },
-	                error: function (shr, status, data) {
-	                    console.log("error " + data + " Status " + shr.status);
-	                },
-	                complete: function () {
-	                    console.log("pscp");
-	                }
-	            });
-
-	        } catch (e) {
-	            console.log(e);
-	        }
+			global.pointData[record].lv.set(global.pointData[record].id,difficulty,score);
+			
 			//luu lai mang vao storage
 			
 			//localStorage.pianoHighscore = JSON.stringify(global.pointData);
@@ -978,14 +1071,14 @@ window.onload = function () {
 			statisticList[PASS_NUMBER] = scene.recordData.length;
 			for(var i=0;i<4;i++) statisticList[PASS_NUMBER] -= statisticList[i];
 			
-			console.log(pointEach);
+			
 			for(var i=0;i<pointEach.length;i++) Point+= pointEach[i];
 			Point -= statisticList[MISS_NUMBER]*pointPenalty;
 			if(Point<0) Point = 0;
 			
 			
 			for (var i=0;i<global.pointData.length;i++)
-				if(global.pointData[i].ID==global.SELECTING_RECORD)
+				if(global.pointData[i].id==global.SELECTING_RECORD)
 			if(Point>global.pointData[i].lv[global.DIFFICULTY]) insertHighScore(Point,i,global.DIFFICULTY);
 			
 			statisticActor.maxLength = 1;
@@ -1332,6 +1425,12 @@ window.onload = function () {
 			}
 			if(e.getAction() === "down"){
 				var keyCode = e.getKeyCode();
+				if (_onKey) {
+					_onKey(keyCode);
+					if(!e.isControlPressed()) _onKey=null;
+				}
+				//if(keyCode==187) changeKey(18);
+				//if(keyCode==189) changeKey(20);
 				if ((e.isControlPressed()&&keyCode==67)||menuContainer.shareButton._show){
 
 				}else{
@@ -1345,7 +1444,8 @@ window.onload = function () {
 					if(index!=-1) return;
 					keysDown.push(keyCode);
 					for(var i=0;i<keyData.length;i++){
-						if((keyCode== keyData[i].keyCode)&&(e.isShiftPressed() == keyData[i].isShift)){
+						for (var j=0;j<keyData[i].keyCode.length;j++)
+						if((keyCode== keyData[i].keyCode[j])&&(e.isShiftPressed() == keyData[i].isShift[j])){
 							keyIndex = i;
 							//break;
 							keyPress(keyIndex);
@@ -1534,42 +1634,36 @@ window.onload = function () {
 			global.player.setting.general.SHOW_KEYBOARD_TEXT=global.SHOW_KEYBOARD_TEXT;
 			global.player.setting.general.SHOW_PLAYBACK_TEXT=global.SHOW_PLAYBACK_TEXT;
 			global.player.score=global.pointData;
+			console.log(global.player.setting);
 			var storage;
-			if (localStorage.pianoic)storage=JSON.parse(localStorage.pianoic);
-			else storage=[];
-	    	var founded;
-	    	for (var i=0;i<storage.length;i++){
-	    		if(storage[i].id==global.player.id){
-	    			storage[i]=global.player;
-	    			founded=true;
-	    			break;
-	    		}
-	    	}
-	    	if (!founded) storage.push(global.player);
-	    	localStorage.pianoic=JSON.stringify(storage);
-	    	var fd = new FormData();
-	        fd.append("setting", global.player.setting);
-	        try {
-	            $.ajax({
-	                url: "/user/setting",
-	                type: "POST",
-	                data: fd,
-	                processData: false,
-	                contentType: false,
-	                cache: false,
-	                success: function (data) {
-	                    console.log("success " + data);
-	                },
-	                error: function (shr, status, data) {
-	                    console.log("error " + data + " Status " + shr.status);
-	                },
-	                complete: function () {
-	                    console.log("pstsv");
-	                }
-	            });
+			
+	    	storage=global.player;
+	    	localStorage.pianoic=LZString.compressToUTF16(JSON.stringify(storage));
+	    	if(global.access){
+		    	var fd = new FormData();
+		        fd.append("setting", global.player.setting);
+		        try {
+		            $.ajax({
+		                url: "/user/setting",
+		                type: "POST",
+		                data: fd,
+		                processData: false,
+		                contentType: false,
+		                cache: false,
+		                success: function (data) {
+		                    console.log("success " + data);
+		                },
+		                error: function (shr, status, data) {
+		                    console.log("error " + data + " Status " + shr.status);
+		                },
+		                complete: function () {
+		                    console.log("pstsv");
+		                }
+		            });
 
-	        } catch (e) {
-	            console.log(e);
+		        } catch (e) {
+		            console.log(e);
+		        }
 	        }
 		 	 //IE & Firefox
 		  	if (e) {
@@ -1579,11 +1673,81 @@ window.onload = function () {
 		  	// For Safari
 		  return LANG.mess.closegame[global.LANGUAGE];
 		};
+		var _onKey;
+		var arr_key=[];
 		
+		var changeKey=function(index){			
+			var isShift;
+			var type;
+		if (!global.onsetkey) arr_key=[];
+		else{
+			if (index>=25) {index-=25;type="white";}
+			else type="black";
+			if (CAAT.KEY_MODIFIERS.control) arr_key.push({index:index,type:type});
+			else arr_key=[{index:index,type:type}];
+			_onKey=function(keyCode){
+				//if(arr_key.length==1)
+					for(var i=0;i<keyData.length;i++){
+						for (var c=0;c<keyData[i].keyCode.length;c++)
+							if((keyCode== keyData[i].keyCode[c])&&(CAAT.KEY_MODIFIERS.shift == keyData[i].isShift[c])){
+								keyData[i].keyCode.splice(c,1);
+								keyData[i].isShift.splice(c,1);
+							}
+					}
+				
+				for(var i=0;i<keyData.length;i++){
+					for (var j=0;j<arr_key.length;j++)						
+						if((arr_key[j].index== keyData[i].index)&&(arr_key[j].type == keyData[i].type)){
+							var _isthisKey=false;
+							for (var c=0;c<keyData[i].keyCode.length;c++)
+								if((keyData[i].keyCode[c]==keyCode)&&(keyData[i].isShift[c]==CAAT.KEY_MODIFIERS.shift))
+									{
+										_isthisKey=true;										
+										break;
+									}
+								if(!_isthisKey) {keyData[i].keyCode.push(keyCode);keyData[i].isShift.push(CAAT.KEY_MODIFIERS.shift);arr_key.splice(j,1);	}													
+						}
+					}
+				}
+
+			
+			
+			}
+		}
+		document.getElementById('canvas').ondragover = function(e) {
+		    e.preventDefault();
+		    return false;
+		};
+		document.getElementById('canvas').ondrop=function (e) {
+			// body...
+			e.preventDefault();
+			var file = e.dataTransfer.files[0],
+		      reader = new FileReader();
+		      
+		  	reader.onload = function (event) {
+		  	var str=event.target.result;
+			var data=LZString.decompressFromUTF16(str);
+			if (data==null) alert("File error!!!");
+			if (data.substr(0,7)=="keyData")
+				keyData=JSON.parse(data.substr(8));
+			console.log(data);
+		  };
+		  reader.readAsText(file);
+		  	
+		  return false;
+		}
 		//load file js
 		DOMLoader.script.add("js/myevent.js");
 		DOMLoader.script.add("js/jquery.simplemodal.js");
 
+		
+		var export_key=function(filename,variables){
+			var name=filename||"pian.oic";
+			var vari=variables||"pian";
+			var key= LZString.compressToUTF16(vari+"="+JSON.stringify(keyData));
+			download(name,key,"data:text/plain;charset=UTF-16BE,");
+		}
+		//export_key("test.oic","keyData");
 		//read hash link
 		var readHash = function(menuContainer){
 			var highScoreContainer = menuContainer.highScoreContainer;
@@ -1619,7 +1783,6 @@ window.onload = function () {
 								highScoreContainer.playButtonFunction();
 							}
 							
-								console.log(arr)
 			  			  }}
 			  }
 			catch(err)

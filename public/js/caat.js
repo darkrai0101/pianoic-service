@@ -24270,7 +24270,7 @@ CAAT.Module({
 
                  window.addEventListener('mousemove', function (e) {
                    // if (e.target === canvas && !me.dragging) {
-                        e.preventDefault();
+                        //e.preventDefault();
                         e.cancelBubble = true;
                         if (e.stopPropagation) e.stopPropagation();
 

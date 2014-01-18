@@ -63,8 +63,8 @@ var LANG={
 			"Copy sheet để học theo"
 			],
 		popupsheet:[
-			"Virtual sheet music",
-			"Sheet nhạc dạng Virtual Piano"
+			"Pianoic sheet music",
+			"Sheet nhạc của Pianoic"
 			]
 	},
 	fb:{

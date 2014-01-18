@@ -1,6 +1,6 @@
 
 /**
- * Module dependencies.
+ * GLOBAL 
  */
 
 db = require('./models');
@@ -10,8 +10,8 @@ graph = require('fbgraph');
 async = require('async');
 
 conf = {
-  app_id : "571644532917565",
-  app_secret : "130d81339a57fad9323b2e8a25bbe492",
+  client_id : "571644532917565",
+  client_secret : "130d81339a57fad9323b2e8a25bbe492",
   scope: 'publish_actions,publish_stream'
 };
 
@@ -26,6 +26,8 @@ var path = require('path');
 var app = express();
 
 var user = require('./routes/user');
+var admin = require('./routes/admin');
+var challenge = require('./routes/challenge');
 
 // all environments
 app.set('port', process.env.PORT || 4000);
@@ -48,7 +50,7 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-/*
+/**
  * ROUTERS
  */
 
@@ -64,19 +66,16 @@ app.all('/user/score', user.addScore);
 
 app.get('/logout', user.logout);
 
+app.get('/challenge', challenge.friend);
+
 app.get('/test', function(req, res){
-  //console.log(req.session.user);
-
-  var wallPost = {
-            score : 12300
-            //message: "ban da danh bai  @[18798138] gjfj"
-          };
-
-          graph.post('100004174080767/scores', wallPost, function(err, res) {
-            // returns the post id
-            console.log(res); // { id: xxxxx}
-          });
-  return res.send('ok');
+  res.setHeader('Content-Type', 'text/plain');
+  var profile = "https://www.facebook.com/dotabox,https://www.facebook.com/netcell";
+  var profile1 = "100004174080767";
+  var profile2 = "100000154313353";
+  var profile3 = "1375217591";
+  var p = ["100004174080767","100000154313353","1375217591"];
+  res.send("1");
 });
 
 http.createServer(app).listen(app.get('port'), function(){

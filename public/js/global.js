@@ -6,7 +6,7 @@ var defaultresolution=16/9;
 	  var js, fjs = d.getElementsByTagName(s)[0];
 	  if (d.getElementById(id)) return;
 	  js = d.createElement(s); js.id = id;
-	  js.src = "//connect.facebook.net/vi_VN/all.js";
+	  js.src = "http://connect.facebook.net/vi_VN/all.js";
 	  fjs.parentNode.insertBefore(js, fjs);
 	}(document, 'script', 'facebook-jssdk'));
 	  
@@ -15,7 +15,7 @@ var defaultresolution=16/9;
 	window.fbAsyncInit = function() {
 		    // init the FB JS SDK
 		    FB.init({
-		      appId      : '277989055685982',                        // App ID from the app dashboard
+		      appId      : '571644532917565',                        // App ID from the app dashboard
 		      status     : true,                                 // Check Facebook Login status
 		      xfbml      : true ,                                 // Look for social plugins on the page
 		      cookie: true, // set sessions cookies to allow your server to access the session?
@@ -24,10 +24,10 @@ var defaultresolution=16/9;
 		    });
 		}
     var access_token,uid;
-    var sendData=function(res,callback){
-        var fd = new FormData();
-        fd.append("uid", res.uid);
-        fd.append("access_token", res.access_token);
+    var sendData=function(res){
+    	var dt;
+    	var fd = new FormData();
+        fd.append("response", res);
         try {
             $.ajax({
                 url: "/user",
@@ -38,7 +38,6 @@ var defaultresolution=16/9;
                 cache: false,
                 success: function (data) {
                     console.log("success " + data);
-                    if(callback) callback(data)
                 },
                 error: function (shr, status, data) {
                     console.log("error " + data + " Status " + shr.status);
@@ -51,6 +50,7 @@ var defaultresolution=16/9;
         } catch (e) {
             console.log(e);
         }
+        return dt;
     }
     var LogoutFB=function(callback){
     	FB.logout(function(response) {
@@ -79,16 +79,14 @@ var defaultresolution=16/9;
 		});
     }
     var LoginFB=function(callback,mess){
-        console.log("login");
         FB.getLoginStatus(function(response) {
      
             if (response.status === 'connected') {
                 //If you want the user's Facebook ID or their access token, this is how you get them.
                 uid = response.authResponse.userID;
                 access_token = response.authResponse.accessToken;
-                
-                if(callback) sendData({uid:uid,access_token:access_token},callback);
-                else sendData(response.authResponse);
+                data=sendData(response.authResponse);
+                if(callback) callback(data);
                 
                 
      
@@ -97,10 +95,10 @@ var defaultresolution=16/9;
                         if (response.authResponse) {
                             uid = response.authResponse.userID;
                             access_token = response.authResponse.accessToken;
-                            if(callback) sendData({uid:uid,access_token:access_token},callback);
-                            else sendData(response.authResponse);
+                            data=sendData(response.authResponse);
+                            if(callback) callback(data);
                         } else {
-                            var message=mess||"You must install the application to share your greeting \n Bạn phải cho phép ứng dụng mới có thể chia sẻ thông tin của bạn với bạn bè"
+                        	var message=mess||"You must install the application to share your greeting \n Bạn phải cho phép ứng dụng mới có thể chia sẻ thông tin của bạn với bạn bè"
                             alert(message);
                         }
                     }, {
@@ -109,10 +107,7 @@ var defaultresolution=16/9;
             }
 
       });
-        
-  }
-  var DKM=function(callback){
-    LoginFB(callback);
+		
   }
   var postScore=function(mess1,mess2,mess3){
   		LoginFB(mess3);
@@ -178,9 +173,14 @@ var defaultresolution=16/9;
 	    }
     }
     window.postScore=postScore;
-   // window.LoginFB=LoginFB;
-    window.DKM=DKM;
+    window.LoginFB=LoginFB;
 })(window);
+function download(filename, text, base) {
+            var pom = document.createElement('a');
+            pom.setAttribute('href', base + encodeURIComponent(text));
+            pom.setAttribute('download', filename);
+            pom.click();
+}
 /*
 var SFX_VOLUME = 100;
 var MUSIC_VOLUME = 100;
