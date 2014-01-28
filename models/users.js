@@ -13,6 +13,7 @@
 			social:Object
 		},
 		highscore: [{mid : Number, score : Number, level : Number}],
+		challenge : Array
 	});
 
 	schema.methods.setting = function(callback){

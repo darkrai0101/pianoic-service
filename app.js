@@ -5,8 +5,10 @@
 
 db = require('./models');
 db();
+ObjectId = require('mongoose').Types.ObjectId;
 
 graph = require('fbgraph');
+facebook_sdk = require('facebook-node-sdk');
 async = require('async');
 
 conf = {
@@ -14,6 +16,28 @@ conf = {
   client_secret : "130d81339a57fad9323b2e8a25bbe492",
   scope: 'publish_actions,publish_stream'
 };
+
+facebook = new facebook_sdk({
+  appID  : conf.client_id,
+  secret : conf.client_secret
+}).setAccessToken(conf.client_id+'|'+conf.client_secret);
+
+musicList = require('./public/js/data.js');
+
+function random3(arr){
+    var n = 3;
+    var result = new Array(n),
+        len = arr.length,
+        taken = new Array(len);
+    if (n > len)
+        throw new RangeError("getRandom: more elements taken than available");
+    while (n--) {
+        var x = Math.floor(Math.random() * len);
+        result[n] = arr[x in taken ? taken[x] : x];
+        taken[x] = --len;
+    }
+    return result;
+  }
 
 /**
  * Module dependencies.
@@ -66,17 +90,25 @@ app.all('/user/score', user.addScore);
 
 app.get('/logout', user.logout);
 
-app.get('/challenge', challenge.friend);
+app.all('/challenge/create', challenge.create);
 
-app.get('/test', function(req, res){
-  res.setHeader('Content-Type', 'text/plain');
-  var profile = "https://www.facebook.com/dotabox,https://www.facebook.com/netcell";
-  var profile1 = "100004174080767";
-  var profile2 = "100000154313353";
-  var profile3 = "1375217591";
-  var p = ["100004174080767","100000154313353","1375217591"];
-  res.send("1");
-});
+app.all('/challenge/score', challenge.score);
+
+app.all('/challenge/respon', challenge.respon);
+
+// app.get('/test', function(req, res){
+//   res.setHeader('Content-Type', 'text/plain');
+//   var profile = "https://www.facebook.com/dotabox,https://www.facebook.com/netcell";
+//   var profile1 = "100004174080767";
+//   var profile2 = "100000154313353";
+//   var profile3 = "1375217591";
+//   var p = ["100004174080767","100000154313353","1375217591"];
+  
+//   var params = {
+//       "href" : "pianoic.com",
+//       "template" : 'Bạn đã nhân được lời thách đấu'
+//     };
+// });
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

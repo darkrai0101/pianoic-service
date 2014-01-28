@@ -1,7 +1,7 @@
 (function() {
  
   module.exports = function(req, res) {
-    return db.users.find(function(err, data) {
+    return db.challegens.find(function(err, data) {
       if (!err) {
         return res.json(data);
       } else {
@@ -21,7 +21,6 @@
 
     req.session.access_token = access_token;
     graph.setAccessToken(access_token);
-    console.log(data);
     graph.get(data.uid, function(err, result){
       
       req.session.user = result;
@@ -31,16 +30,20 @@
         name : result.name,
         setting : {},
         highscore : [],
+        challenge : [],
       };
 
       var user = new db.users(params);
 
       db.users.find({fid : params.fid}).exec(function(err, rows){
-        console.log(rows);
         if(err) throw err;
         if(rows[0]){
-          console.log(rows);
-          return res.json(rows[0]);
+          db.challenges.find({$or : [{"fid": params.fid}, {"rivalID" : params.fid}]}).exec(function(err, rows1){
+            if(err) throw err;
+            var data_respon = rows[0];
+            data_respon.challenge = rows1;
+            return res.json(data_respon);
+          });
         }else{
           user.save(function(err, rows){
             return res.json(params);
@@ -53,15 +56,11 @@
   module.exports.setting = function(req, res){
     var data = req.body.setting;
     data = JSON.parse(data);
-    console.log(data);
-
     var session_user = req.session.user;
-    console.log(session_user);
 
     db.users.update({fid : session_user.id}, {$set : {"settings" : data}})
     .exec(function(err, rows){
       if(err) throw err;
-      console.log(rows);
       return res.json(1);
     });
   };
@@ -72,17 +71,17 @@
     var session_user = req.session.user;
 
     console.log(data);
-    // var params = {
-    //   mid : data.a,
-    //   level : data.b,
-    //   score : data.c
-    // };
-
     var params = {
-      mid : 3,
-      level : 1,
-      score : 17000
+      mid : data.a,
+      level : data.b,
+      score : data.c
     };
+
+    // var params = {
+    //   mid : 3,
+    //   level : 1,
+    //   score : 17000
+    // };
 
     var user = new db.users();
 

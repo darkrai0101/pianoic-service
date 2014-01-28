@@ -27,5 +27,6 @@
  
   module.exports.users = mongoose.model('users', require('./users'));
   module.exports.admins = mongoose.model('admins', require('./admins'));
+  module.exports.challenges = mongoose.model('challenges', require('./challenges'));
  
 }).call(this);

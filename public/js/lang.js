@@ -74,5 +74,10 @@ var LANG={
 		permission:[
 			"You must install the application to share your greeting",
 			"Bạn phải cho phép ứng dụng mới có thể chia sẻ thông tin của bạn với bạn bè"]
+	},
+	challenge:{
+		cancel:[
+			"You lose?",
+			"Bạn muốn hủy thách đấu?"]
 	}
 }
